@@ -9,16 +9,16 @@ class TodoManeger {
   TodoManeger(this.storege) {
     storege = storege;
     todos = getTodosFromStorege();
+    checkExitsStorege();
   }
   Map getTodosFromStorege() {
     return {...storege.readAsLinesSync().asMap()};
   }
 
-  void checkExitStorege() {
+  void checkExitsStorege() {
     if (!storege.existsSync()) {
       storege.createSync();
     }
-    // ignore: non_constant_identifier_names
   }
 
   void addTodo(String text) {
@@ -61,23 +61,33 @@ TodoApp commands:
   --help, -h                            :"Show commands list"
 """);
   }
+
+  String getCommand(int key) {
+    return commands[key] ?? '';
+  }
+
+  bool checkCommandExists(int key, {required String Function() message}) {
+    if (commands[key] != null) {
+      return true;
+    }
+    print(message());
+    getHelp();
+    return false;
+  }
 }
 
 void main(List<String> args) {
   TodoManeger todoManeger = TodoManeger(File('./todoes.txt'));
   CommandHandler commandHandler = CommandHandler(commands: args.asMap());
-
-  final command = args[0];
-  switch (command) {
+  switch (commandHandler.getCommand(0)) {
     case '-a':
     case '-add':
-      if (args.length == 2) {
-        todoManeger.addTodo(args[1]);
-        print('your todo added to your todo list');
-      } else {
-        print('pelese enter your todo\'s title');
-        commandHandler.getHelp();
+      if (!commandHandler.checkCommandExists(1,
+          message: () => "please enter your todo's title")) {
+        break;
       }
+      todoManeger.addTodo(commandHandler.getCommand(1));
+      print('your todo added to your todo list');
       break;
     case '--list':
     case '-l':
@@ -87,36 +97,38 @@ void main(List<String> args) {
       break;
     case '-d':
     case '--delete':
-      if (args.length == 2) {
-        int id = int.parse(args[1]);
-        todoManeger.deleteTodo(id);
-        print('your todo deleted');
-      } else {
-        print('pelese enter your todo\'s id');
-        commandHandler.getHelp();
+      if (!commandHandler.checkCommandExists(1,
+          message: () => "please enter your todo's id")) {
+        break;
       }
+      int id = int.parse(commandHandler.getCommand(1));
+      todoManeger.deleteTodo(id);
       print(todoManeger.todos);
+      print('your todo deleted');
+
       break;
     case '-u':
     case '--update':
-      if (args.length != 3) {
-        print('pelese enter your todo\'s id and  the new title');
-        commandHandler.getHelp();
-        return;
+      if (!commandHandler.checkCommandExists(2,
+          message: () => "please enter your todo's id and your new todo")) {
+        break;
       }
-      int id = int.parse(args[1]);
-      String title = args[2];
+      int id = int.parse(commandHandler.getCommand(1));
+      String title = commandHandler.getCommand(2);
       todoManeger.updateTodo(id, title);
       print('your todo updated');
       break;
     case '--find':
     case '-f':
-      var id = int.parse(args[1]);
-      if (args.length == 2) {
-        print('your todo is');
-        var todo = todoManeger.todos[id];
-        print(todo);
+      var id = int.parse(commandHandler.getCommand(1));
+      if (!commandHandler.checkCommandExists(1,
+          message: () => "please enter your todo's id")) {
+        break;
       }
+      print('your todo is');
+      var todo = todoManeger.todos[id];
+      print(todo);
+
       break;
     case '--help':
     case '-h':
